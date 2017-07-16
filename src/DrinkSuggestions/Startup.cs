@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using DrinkSuggestions.DAL;
 
 namespace DrinkSuggestions
 {
@@ -20,13 +22,25 @@ namespace DrinkSuggestions
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
+
+            Environment = env;
         }
 
-        public IConfigurationRoot Configuration { get; }
+        private IConfigurationRoot Configuration { get; }
+        private IHostingEnvironment Environment { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<DrinksContext>(options => {
+                if (Environment.IsProduction())
+                {
+                    options.UseMySql(Configuration.GetConnectionString("default"));
+                } else {
+                    options.UseSqlite(Configuration.GetConnectionString("default"));
+                }
+            });
+
             // Add framework services.
             services.AddMvc();
         }
